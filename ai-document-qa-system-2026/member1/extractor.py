@@ -101,7 +101,7 @@ def build_converter() -> DocumentConverter:
      - EasyOCR         → scanned PDF support
     """
     pdf_opts = PdfPipelineOptions(do_table_structure=True, do_ocr=True)
-    pdf_opts.table_structure_options.do_cell_matching = True
+    pdf_opts.table_structure_options.do_cell_matching = True  
     return DocumentConverter(
         format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pdf_opts)}
     )

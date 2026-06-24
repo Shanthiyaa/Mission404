@@ -6,7 +6,8 @@ Run with: uvicorn api:app --reload --port 8000
 Place this file in the ROOT of ai-document-qa-system-2026/
 (same level as config.py, member1/, member2/, member3/)
 """
-
+import hashlib
+import secrets
 import os
 import sys
 import json
@@ -15,6 +16,8 @@ import uuid
 import shutil
 import logging
 import threading
+import urllib.request
+import urllib.error
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
@@ -46,10 +49,15 @@ FAISS_PATH   = Path(FAISS_INDEX_DIR)
 CHUNKS_PATH  = Path(CHUNKS_JSON_PATH)
 DOCUMENTS_DB = Path("./data/documents.json")
 ACTIVITY_LOG = Path("./data/activity.json")
+USERS_DB     = Path("./data/users.json")
 
 UPLOAD_PATH.mkdir(parents=True, exist_ok=True)
 FAISS_PATH.mkdir(parents=True, exist_ok=True)
 (Path("./data")).mkdir(parents=True, exist_ok=True)
+
+# ── Auth config ───────────────────────────────────────────────────────────────
+ALLOWED_DOMAIN   = "ale.com"   # ← change this if your real company domain differs
+GOOGLE_CLIENT_ID = "957103509038-e592pb7kr2or3p0s9pqarr488t1j5vj2.apps.googleusercontent.com"  # ← paste your real client ID here
 
 # ── In-memory task tracker ────────────────────────────────────────────────────
 _tasks: dict[str, dict] = {}
@@ -77,6 +85,7 @@ async def lifespan(app: FastAPI):
     log.info(f"  FAISS index : {FAISS_PATH.resolve()}")
     log.info(f"  Ollama model: {OLLAMA_MODEL} @ {OLLAMA_BASE_URL}")
     log.info(f"  FAISS ready : {_retriever_cache['loaded']}")
+    log.info(f"  Allowed domain: @{ALLOWED_DOMAIN}")
     yield
     # ── shutdown (nothing to clean up) ────────────────────────────────────────
 
@@ -167,6 +176,37 @@ def _ensure_retriever():
     idx_file  = FAISS_PATH / "index.faiss"
     meta_file = FAISS_PATH / "metadata.json"
     _retriever_cache["loaded"] = idx_file.exists() and meta_file.exists()
+
+
+# ── Auth helpers ───────────────────────────────────────────────────────────────
+
+def _load_users() -> list[dict]:
+    if USERS_DB.exists():
+        with open(USERS_DB, encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+
+def _save_users(users: list[dict]) -> None:
+    USERS_DB.parent.mkdir(parents=True, exist_ok=True)
+    with open(USERS_DB, "w", encoding="utf-8") as f:
+        json.dump(users, f, indent=2, ensure_ascii=False)
+
+
+def _hash_password(password: str, salt: str) -> str:
+    return hashlib.sha256(f"{salt}{password}".encode()).hexdigest()
+
+
+def _check_domain(email: str) -> bool:
+    return email.strip().lower().endswith(f"@{ALLOWED_DOMAIN}")
+
+
+def _public_user(u: dict) -> dict:
+    return {
+        "name":       u["name"],
+        "email":      u["email"],
+        "department": u.get("department", ""),
+    }
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -280,6 +320,124 @@ def _run_pipeline(task_id: str, file_path: str, doc_entry: dict) -> None:
             "done":     True,
             "error":    str(exc),
         })
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  AUTH  —  /api/auth/signup, /api/auth/login, /api/auth/google
+# ══════════════════════════════════════════════════════════════════════════════
+
+class SignupRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+    department: Optional[str] = ""
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class GoogleAuthRequest(BaseModel):
+    credential: str
+
+
+@app.post("/api/auth/signup")
+async def signup(req: SignupRequest):
+    email = req.email.strip().lower()
+
+    if not _check_domain(email):
+        raise HTTPException(
+            status_code=403,
+            detail=f"Only @{ALLOWED_DOMAIN} email addresses are allowed to sign up."
+        )
+
+    if not req.name.strip() or not req.password.strip():
+        raise HTTPException(status_code=400, detail="Name and password are required.")
+
+    users = _load_users()
+    if any(u["email"] == email for u in users):
+        raise HTTPException(status_code=409, detail="An account with this email already exists.")
+
+    salt = secrets.token_hex(16)
+    user = {
+        "name":       req.name.strip(),
+        "email":      email,
+        "department": (req.department or "").strip(),
+        "salt":       salt,
+        "password":   _hash_password(req.password, salt),
+        "created_at": datetime.now().isoformat(),
+    }
+    users.append(user)
+    _save_users(users)
+
+    _append_activity(f"{user['name']} ({email}) created an account", color="bg-purple-500")
+
+    return {"success": True, "user": _public_user(user)}
+
+
+@app.post("/api/auth/login")
+async def login(req: LoginRequest):
+    email = req.email.strip().lower()
+
+    if not _check_domain(email):
+        raise HTTPException(
+            status_code=403,
+            detail=f"Only @{ALLOWED_DOMAIN} email addresses are allowed to sign in."
+        )
+
+    users = _load_users()
+    user = next((u for u in users if u["email"] == email), None)
+
+    if not user or not user.get("password") or _hash_password(req.password, user["salt"]) != user["password"]:
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+
+    return {"success": True, "user": _public_user(user)}
+
+
+@app.post("/api/auth/google")
+async def google_login(req: GoogleAuthRequest):
+    """
+    Verifies a Google ID token and logs the user in (creating an account
+    on first sign-in) — restricted to the allowed company domain.
+    """
+    try:
+        url = f"https://oauth2.googleapis.com/tokeninfo?id_token={req.credential}"
+        with urllib.request.urlopen(url, timeout=5) as resp:
+            payload = json.loads(resp.read().decode())
+    except urllib.error.HTTPError:
+        raise HTTPException(status_code=401, detail="Invalid Google token.")
+    except Exception as exc:
+        log.error(f"Google token verification failed: {exc}")
+        raise HTTPException(status_code=503, detail="Could not verify Google token. Try again.")
+
+    if payload.get("aud") != GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=401, detail="Token was not issued for this app.")
+
+    email = payload.get("email", "").strip().lower()
+    if not payload.get("email_verified") or not _check_domain(email):
+        raise HTTPException(
+            status_code=403,
+            detail=f"Only verified @{ALLOWED_DOMAIN} Google accounts are allowed."
+        )
+
+    users = _load_users()
+    user = next((u for u in users if u["email"] == email), None)
+
+    if not user:
+        user = {
+            "name":       payload.get("name", email.split("@")[0]),
+            "email":      email,
+            "department": "",
+            "salt":       secrets.token_hex(16),
+            "password":   None,   # Google-only account, no local password
+            "created_at": datetime.now().isoformat(),
+        }
+        users.append(user)
+        _save_users(users)
+        _append_activity(f"{user['name']} ({email}) signed up via Google", color="bg-purple-500")
+
+    return {"success": True, "user": _public_user(user)}
 
 
 # ══════════════════════════════════════════════════════════════════════════════

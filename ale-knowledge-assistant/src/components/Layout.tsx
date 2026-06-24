@@ -1,5 +1,6 @@
 import { ReactNode } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import {
   LayoutDashboard, MessageSquare, Upload, BookOpen,
   Settings, LogOut, Brain, Bell, Moon, Sun, Search
@@ -22,6 +23,8 @@ interface LayoutProps {
 
 export default function Layout({ children, onLogout, dark, onToggleDark }: LayoutProps) {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const initials = user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?'
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
@@ -75,11 +78,11 @@ export default function Layout({ children, onLogout, dark, onToggleDark }: Layou
         <div className="p-2 border-t border-white/10">
           <div className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-white/10 cursor-pointer">
             <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
-              TK
+              {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-white text-xs font-medium truncate">Thirumalaikumar</div>
-              <div className="text-white/40 text-xs truncate">Intern · Network Eng.</div>
+              <div className="text-white text-xs font-medium truncate">{user?.name}</div>
+              <div className="text-white/40 text-xs truncate">{user?.department || 'Member'}</div>
             </div>
           </div>
         </div>
@@ -105,7 +108,7 @@ export default function Layout({ children, onLogout, dark, onToggleDark }: Layou
             <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-purple-500 rounded-full" />
           </button>
           <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white text-xs font-medium cursor-pointer">
-            TK
+            {initials}
           </div>
         </header>
 

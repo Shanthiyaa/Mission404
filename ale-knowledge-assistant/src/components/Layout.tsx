@@ -6,6 +6,7 @@ import {
   Settings, LogOut, Brain, Bell, Moon, Sun, Search
 } from 'lucide-react'
 import clsx from 'clsx'
+import { User } from '../utils/auth'
 
 const NAV = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -30,8 +31,8 @@ export default function Layout({ children, onLogout, dark, onToggleDark }: Layou
     <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
       <aside className="w-56 flex-shrink-0 flex flex-col" style={{ background: '#1F1B2E' }}>
         <div className="p-4 border-b border-white/10 flex items-center gap-3">
-          <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Brain size={16} className="text-white" />
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm">
+            <img src="/ale-logo.png" alt="ALE Logo" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = 'https://ui-avatars.com/api/?name=ALE&background=6b21a8&color=fff' }} />
           </div>
           <div>
             <div className="text-white text-sm font-medium leading-tight">ALE Knowledge</div>

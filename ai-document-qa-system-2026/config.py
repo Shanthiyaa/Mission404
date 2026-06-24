@@ -20,11 +20,11 @@ DOC_TYPE_MAP = {
 
 # ── Chunking — tuned per document type ───────────────────────────────────────
 CHUNK_CONFIG = {
-    "user_guide":   {"chunk_size": 600, "chunk_overlap": 80},
-    "release_note": {"chunk_size": 450, "chunk_overlap": 60},
-    "sqa":          {"chunk_size": 350, "chunk_overlap": 40},
-    "kcs":          {"chunk_size": 600, "chunk_overlap": 80},
-    "unknown":      {"chunk_size": 512, "chunk_overlap": 64},
+    "user_guide":   {"chunk_size": 2000, "chunk_overlap": 200},
+    "release_note": {"chunk_size": 1500, "chunk_overlap": 150},
+    "sqa":          {"chunk_size": 1500, "chunk_overlap": 150},
+    "kcs":          {"chunk_size": 2000, "chunk_overlap": 200},
+    "unknown":      {"chunk_size": 1500, "chunk_overlap": 150},
 }
 
 # ── Embeddings ────────────────────────────────────────────────────────────────

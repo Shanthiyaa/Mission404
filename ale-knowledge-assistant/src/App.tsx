@@ -9,6 +9,7 @@ import Chat from './pages/Chat'
 import Upload from './pages/Upload'
 import KnowledgeBase from './pages/KnowledgeBase'
 import Settings from './pages/Settings'
+import { User } from './utils/auth'
 
 function Shell() {
   const [dark, setDark] = useState(false)

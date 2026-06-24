@@ -66,9 +66,7 @@ export default function Login({ onToggleDark }: LoginProps) {
       <div className="w-full max-w-sm">
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-8">
           <div className="text-center mb-6">
-            <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center mx-auto mb-3">
-              <Brain size={22} className="text-white" />
-            </div>
+            <img src="/ale-logo.png" alt="ALE Logo" className="w-12 h-12 rounded-full shadow-sm mx-auto mb-3 object-cover" onError={(e) => { e.currentTarget.src = 'https://ui-avatars.com/api/?name=ALE&background=6b21a8&color=fff' }} />
             <div className="text-xs text-gray-400 uppercase tracking-widest mb-2">Alcatel-Lucent Enterprise</div>
             <h1 className="text-xl font-medium text-gray-900 dark:text-white">Sign in to ALE Knowledge</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Internal AI-powered document assistant</p>
@@ -81,6 +79,7 @@ export default function Login({ onToggleDark }: LoginProps) {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {error && <div className="text-xs text-red-500 bg-red-50 p-2 rounded">{error}</div>}
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Work email</label>
               <input

@@ -21,6 +21,11 @@ export default function Signup() {
       return
     }
 
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long.')
+      return
+    }
+
     setLoading(true)
     try {
       await signup(name, email, password, department)
@@ -37,9 +42,7 @@ export default function Signup() {
       <div className="w-full max-w-sm">
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-8">
           <div className="text-center mb-6">
-            <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center mx-auto mb-3">
-              <Brain size={22} className="text-white" />
-            </div>
+            <img src="/ale-logo.png" alt="ALE Logo" className="w-12 h-12 rounded-full shadow-sm mx-auto mb-3 object-cover" onError={(e) => { e.currentTarget.src = 'https://ui-avatars.com/api/?name=ALE&background=6b21a8&color=fff' }} />
             <h1 className="text-xl font-medium text-gray-900 dark:text-white">Create your account</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Join ALE Knowledge Assistant</p>
           </div>
@@ -51,26 +54,28 @@ export default function Signup() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {error && <div className="text-xs text-red-500 bg-red-50 p-2 rounded">{error}</div>}
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1.5">Full name</label>
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" className="input" title="Full name" />
+              <input value={name} onChange={e => setName(e.target.value)} required placeholder="Your full name" className="input" title="Full name" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1.5">Work email</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@ale.com" className="input" title="Work email" />
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@ale.com" className="input" title="Work email" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1.5">Department</label>
-              <input value={department} onChange={e => setDepartment(e.target.value)} placeholder="e.g. Network Engineering" className="input" title="Department" />
+              <input value={department} onChange={e => setDepartment(e.target.value)} required placeholder="e.g. Network Engineering" className="input" title="Department" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1.5">Password</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="input" title="Password" />
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" className="input" title="Password" />
             </div>
             <button type="submit" disabled={loading} className="btn-primary w-full">
               {loading ? 'Creating account…' : 'Create account'}
             </button>
           </form>
+
 
           <p className="text-center text-xs text-gray-500 mt-4">
             Already have an account?{' '}

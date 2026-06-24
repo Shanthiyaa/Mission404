@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import clsx from 'clsx'
+import { useAuth } from '../context/AuthContext'
 
 interface SettingsProps { dark: boolean; onToggleDark: () => void }
 
@@ -34,12 +35,15 @@ function SettingRow({ label, sub, right }: { label: string; sub: string; right: 
 }
 
 export default function Settings({ dark, onToggleDark }: SettingsProps) {
+  const { user } = useAuth()
   const [compact, setCompact] = useState(true)
   const [showConf, setShowConf] = useState(true)
   const [multiDoc, setMultiDoc] = useState(true)
   const [citations, setCitations] = useState(true)
   const [model, setModel] = useState('Llama 3.2')
   const [k, setK] = useState('3')
+  
+  const initials = user?.name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'U'
 
   return (
     <div>
@@ -60,11 +64,11 @@ export default function Settings({ dark, onToggleDark }: SettingsProps) {
           <div className="card">
             <h2 className="text-sm font-medium text-gray-900 dark:text-white mb-3 pb-2 border-b border-gray-50 dark:border-gray-800">Profile</h2>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white font-medium flex-shrink-0">TK</div>
+              <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white font-medium flex-shrink-0">{initials}</div>
               <div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">Thirumalaikumar</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">thirumalaikumar@ale.com</div>
-                <div className="text-xs text-gray-400">Network Engineering Intern</div>
+                <div className="text-sm font-medium text-gray-900 dark:text-white">{user?.name}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</div>
+                <div className="text-xs text-gray-400">{user?.department}</div>
               </div>
             </div>
             <button className="w-full border border-gray-200 dark:border-gray-700 rounded-lg py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">

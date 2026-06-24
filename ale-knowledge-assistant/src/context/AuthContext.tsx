@@ -1,10 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from 'react'
-
-interface User {
-  name: string
-  email: string
-  department: string
-}
+import { loginUser, registerUser, User } from '../utils/auth'
 
 interface AuthContextType {
   user: User | null
@@ -18,54 +13,33 @@ const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('ale_user')
+    const saved = localStorage.getItem('ale_current_user')
     return saved ? JSON.parse(saved) : null
   })
 
   const persist = (u: User) => {
     setUser(u)
-    localStorage.setItem('ale_user', JSON.stringify(u))
-  }
-
-  const handleResponse = async (res: Response) => {
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.detail || 'Something went wrong.')
-    return data
+    localStorage.setItem('ale_current_user', JSON.stringify(u))
   }
 
   const login = async (email: string, password: string) => {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    })
-    const data = await handleResponse(res)
-    persist(data.user)
+    const u = await loginUser(email, password)
+    persist(u)
   }
 
   const signup = async (name: string, email: string, password: string, department: string) => {
-    const res = await fetch('/api/auth/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, department }),
-    })
-    const data = await handleResponse(res)
-    persist(data.user)
+    const u = await registerUser({ name, email, department }, password)
+    persist(u)
   }
 
   const loginWithGoogle = async (credential: string) => {
-    const res = await fetch('/api/auth/google', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ credential }),
-    })
-    const data = await handleResponse(res)
-    persist(data.user)
+    // For local simulation, we can just throw or mock.
+    throw new Error('Google login is not supported in local mode.')
   }
 
   const logout = () => {
     setUser(null)
-    localStorage.removeItem('ale_user')
+    localStorage.removeItem('ale_current_user')
   }
 
   return (

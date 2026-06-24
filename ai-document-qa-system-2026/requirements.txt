@@ -1,5 +1,5 @@
 # ── Extraction & chunking ─────────────────────────────────────────────────────
-docling>=2.100.0
+pymupdf>=1.24.0
 langchain>=0.1.0
 langchain-community>=0.3.0
 langchain-ollama>=0.3.0

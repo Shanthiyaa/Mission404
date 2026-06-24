@@ -14,6 +14,18 @@ from member1.extractor import process_documents
 from member2.embeddings import SentenceTransformerEmbeddings
 from vector_store import VectorStore
 
+class EmbeddingModel:
+    def __init__(self):
+        self.embeddings = SentenceTransformerEmbeddings()
+        self.dimension = self.embeddings.model.get_sentence_embedding_dimension()
+
+    def embed_texts(self, texts: list) -> np.ndarray:
+        return np.array(self.embeddings.embed_documents(texts))
+
+    def embed_query(self, text: str) -> np.ndarray:
+        return np.array(self.embeddings.embed_query(text))
+
+
 st.set_page_config(page_title="Document Q&A Assistant", page_icon="📄", layout="wide")
 
 st.markdown("""
